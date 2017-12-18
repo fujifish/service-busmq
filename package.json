@@ -1,0 +1,25 @@
+{
+  "name": "service-busmq",
+  "version": "1.0.0",
+  "description": "Microservices over busmq",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/capriza/service-busmq.git"
+  },
+  "author": {
+    "name": "Capriza Inc.",
+    "email": "core@capriza.com"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/capriza/service-busmq/issues"
+  },
+  "homepage": "https://github.com/capriza/service-busmq#readme",
+  "dependencies": {
+    "busmq": "2.5.0"
+  }
+}
