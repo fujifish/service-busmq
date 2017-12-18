@@ -4,7 +4,7 @@ try { var newrelic = require('newrelic');
 } catch(ex) {}
 
 newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerModule, moduleName) {
-    shim.setLibrary('busMQ');
+    shim.setLibrary('busmq');
 
     const service = messageBrokerModule.create({}).service('bla');
     const serviceProto = Object.getPrototypeOf(service);
@@ -28,8 +28,9 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
 });
 
 newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrokerModule, moduleName) {
-    shim.setLibrary('busMQ');
-    shim.recordSubscribedConsume(messageBrokerModule.prototype, 'subscribeService', {
+    shim.setLibrary('busmq');
+
+    shim.recordSubscribedConsume(messageBrokerModule.prototype, 'consume', {
         consumer: shim.LAST,
         messageHandler: function(shim, consumer, name, args) {
             const request = args[0];

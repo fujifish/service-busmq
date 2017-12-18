@@ -42,7 +42,7 @@ class BusServices extends Emitter {
         });
     }
 
-    async subscribeService(name, handler) {
+    async consume(name, handler) {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before subscribing a service`);
 
         return new Promise((resolve, reject) => {
@@ -82,17 +82,17 @@ class BusServices extends Emitter {
         });
     }
 
-    async request(serviceName, request, options) {
+    async request(serviceName, method, request, options) {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before requesting a service`);
 
-        this._logger.debug(`sending request for method '%s'`, request.method);
+        this._logger.debug(`sending request for method '%s'`, method);
         this._logger.trace(request, 'extra request details');
 
         const service = await this.service(serviceName);
 
         return new Promise((resolve, reject) => {
-            service.request(request, options, function(err, reply) {
-                this._logger.debug(`got response for request method '%s'`, request.method);
+            service.request(Object.assign({ method }, request), options, function(err, reply) {
+                this._logger.debug(`got response for request method '%s'`, method);
                 this._logger.trace('extra reply details %j, error was %j', reply, err);
                 if (err) reject({ error: err, reply: reply});
                 else resolve(reply);

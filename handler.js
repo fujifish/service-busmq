@@ -15,23 +15,22 @@ class ServiceHandler {
 
     async handle(request) {
         const methodName = request.method;
-        this._logger.debug(`start handling '%s' request`, methodName);
+        this._logger.debug(`start handling ${methodName} request`);
         if (!methodName) throw new Error(`[ServiceHandler] failed to handle request - missing type`);
 
-        const method = this[`handle/${methodName}`];
+        const method = this[methodName];
         if (!method) throw new Error(`[ServiceHandler] failed to handle request '${methodName}' - missing handler method`);
-
-        const validateMethod = this[`validate/${methodName}`];
-        if (validateMethod) validateMethod.call(this, request);
 
         return await method.call(this, request);
     }
 
     _buildMethods(obj) {
-        if (!obj) return;
-        
+        if (Object.getPrototypeOf(obj) === Object.prototype) return;
+
         Object.getOwnPropertyNames(obj).forEach(prop => {
-            var res = /^handle\/(.*)$/.exec(prop);
+            if (prop === 'constructor') return;
+
+            var res = /^([^_].+)$/.exec(prop);
             if (res) this._methods.push(res[1]);
         });
         this._buildMethods(Object.getPrototypeOf(obj));
