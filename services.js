@@ -97,7 +97,7 @@ class BusServices extends Emitter {
         return new Promise((resolve, reject) => {
             service.request(Object.assign({ service: serviceName, method }, request), options, (err, reply) => {
                 this._logger.debug(`got response for request method '${method}'`);
-                this._logger.trace(`extra reply details ${reply}, error was ${err}`);
+                this._logger.trace(reply || {}, `extra reply details, error was ${err}`);
                 if (err) reject({ error: err, reply: reply});
                 else resolve(reply);
             });
