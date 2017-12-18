@@ -12,7 +12,7 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
     shim.recordProduce(serviceProto, 'request', function(shim, fn, name, args) {
         const request = args[0],
             options = args[1],
-            transName = `${request.service || 'service'}:${request.method || 'method'} (${process.env.NODE_ENV || ''})`;
+            transName = `${request.service || 'service'}/${request.method || 'method'}`;
         
         newrelic.setTransactionName(transName);
         
@@ -36,7 +36,7 @@ newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrok
             const request = args[0];
             //shim.insertCATReplyHeader(request.headers, true);
             return {
-                destinationName: `${request.service || 'service'}:${request.method || 'method'} (${process.env.NODE_ENV || ''})`,
+                destinationName: `${request.service || 'service'}/${request.method || 'method'}`,
                 destinationType: 'service',
                 headers: request.headers
             };
