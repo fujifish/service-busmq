@@ -30,7 +30,7 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
 newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrokerModule, moduleName) {
     shim.setLibrary('busmq');
 
-    shim.recordSubscribedConsume(messageBrokerModule.prototype, 'consume', {
+    shim.recordSubscribedConsume(messageBrokerModule.BusServices.prototype, 'consume', {
         consumer: shim.LAST,
         messageHandler: function(shim, consumer, name, args) {
             const request = args[0];
