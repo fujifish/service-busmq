@@ -91,7 +91,7 @@ class BusServices extends Emitter {
         const service = await this.service(serviceName);
 
         return new Promise((resolve, reject) => {
-            service.request(Object.assign({ method }, request), options, function(err, reply) {
+            service.request(Object.assign({ method }, request), options, (err, reply) => {
                 this._logger.debug(`got response for request method '%s'`, method);
                 this._logger.trace('extra reply details %j, error was %j', reply, err);
                 if (err) reject({ error: err, reply: reply});
