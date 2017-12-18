@@ -1,6 +1,6 @@
 {
   "name": "service-busmq",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Microservices over busmq",
   "main": "index.js",
   "scripts": {
