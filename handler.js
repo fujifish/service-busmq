@@ -3,14 +3,14 @@ const logger = require('./logger');
 
 class ServiceHandler {
     constructor(config) {
-        this._methods = [];
+        this._methods = {};
         this._name = config.name;
         this._logger = logger(config);
         this._buildMethods(this);
     }
 
     get methods() {
-        return this._methods;
+        return Object.keys(this._methods);
     }
 
     async handle(request) {
@@ -18,10 +18,12 @@ class ServiceHandler {
         this._logger.debug(`start handling ${methodName} request`);
         if (!methodName) throw new Error(`[ServiceHandler] failed to handle request - missing type`);
 
-        const method = this[methodName];
-        if (!method) throw new Error(`[ServiceHandler] failed to handle request '${methodName}' - missing handler method`);
+        if (!this._isMethodExists(methodName)) {
+            if (methodName === 'getMethods') return this.methods;
+            else throw new Error(`[ServiceHandler] failed to handle request '${methodName}' - missing handler method`);
+        }
 
-        return await method.call(this, request);
+        return await this[methodName](request);
     }
 
     _buildMethods(obj) {
@@ -31,9 +33,13 @@ class ServiceHandler {
             if (prop === 'constructor') return;
 
             var res = /^([^_].+)$/.exec(prop);
-            if (res) this._methods.push(res[1]);
+            if (res) this._methods[prop] = true;
         });
         this._buildMethods(Object.getPrototypeOf(obj));
+    }
+
+    _isMethodExists(method) {
+        return this._methods[method];
     }
 }
 
