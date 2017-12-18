@@ -18,7 +18,7 @@ class BusServices extends Emitter {
     }
 
     async connect() {
-        if (this._connected) throw new Error(`[busServices] bus already connected`);
+        if (this._connected) return;
 
         return new Promise((resolve, reject) => {
             this._bus.on('offline', $ => {
@@ -37,6 +37,10 @@ class BusServices extends Emitter {
                 this.emit('online');
                 resolve();
             });
+
+            this._bus.on('error', err => {
+                this._logger.info(`bus error: ${err}`);
+            });
             
             this._bus.connect();
         });
@@ -48,12 +52,12 @@ class BusServices extends Emitter {
         return new Promise((resolve, reject) => {
             var s = this._bus.service(name);
             s.on('serving', $ => {
-                this._logger.info(`service '%s' registered`, name);
+                this._logger.info(`service '${name}' registered`);
                 resolve(s);
             });
             
             s.on('request', async (request, reply) => {
-                this._logger.debug(`request arrived for service '%s'`, name);
+                this._logger.debug(`request arrived for service '${name}'`);
                 var res = null, error = null;
                 try { res = await handler(request);
                 } catch(ex) {
@@ -75,7 +79,7 @@ class BusServices extends Emitter {
             var s = this._bus.service(name);
             s.on('disconnect', $ => delete this._services[name]);
             s.connect($ => {
-                this._logger.info(`client service '%s' connected`, name);
+                this._logger.info(`client service '${name}' connected`);
                 this._services[name] = s;
                 resolve(s);
             });
@@ -85,15 +89,15 @@ class BusServices extends Emitter {
     async request(serviceName, method, request, options) {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before requesting a service`);
 
-        this._logger.debug(`sending request for method '%s'`, method);
-        this._logger.trace(request, 'extra request details');
+        this._logger.debug(`sending request for method '${method}'`);
+        this._logger.trace(request, `extra request details`);
 
         const service = await this.service(serviceName);
 
         return new Promise((resolve, reject) => {
-            service.request(Object.assign({ method }, request), options, (err, reply) => {
-                this._logger.debug(`got response for request method '%s'`, method);
-                this._logger.trace('extra reply details %j, error was %j', reply, err);
+            service.request(Object.assign({ service: serviceName, method }, request), options, (err, reply) => {
+                this._logger.debug(`got response for request method '${method}'`);
+                this._logger.trace(`extra reply details ${reply}, error was ${err}`);
                 if (err) reject({ error: err, reply: reply});
                 else resolve(reply);
             });

@@ -11,6 +11,7 @@ class BusService {
 
     async start() {
         await this._busServices.connect();
+        return await this._busServices.consume(this._name, this.handleRequest.bind(this));        
     }
 
     async handleRequest(request) {
