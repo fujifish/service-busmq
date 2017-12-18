@@ -1,6 +1,6 @@
 {
   "name": "service-busmq",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Microservices over busmq",
   "main": "index.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "name": "Capriza Inc.",
     "email": "core@capriza.com"
   },
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/capriza/service-busmq/issues"
   },
