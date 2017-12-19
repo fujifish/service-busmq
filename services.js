@@ -50,13 +50,7 @@ class BusServices extends Emitter {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before subscribing a service`);
 
         return new Promise((resolve, reject) => {
-            var s = this._bus.service(name);
-            s.on('serving', $ => {
-                this._logger.info(`service '${name}' registered`);
-                resolve(s);
-            });
-            
-            s.on('request', async (request, reply) => {
+            var onRequest = async (request, reply) => {
                 this._logger.debug(`request arrived for service '${name}'`);
                 var res = null, error = null;
                 try { res = await handler(request);
@@ -65,7 +59,21 @@ class BusServices extends Emitter {
                     this._logger.error({ exception: ex.stack }, error);
                 }
                 reply(error, res);
+            };
+
+            var s = this._bus.service(name);
+
+            s.once('disconnect', $ => {
+                s.removeListener('request', onRequest);
+                onRequest = undefined;
             });
+
+            s.once('serving', $ => {
+                this._logger.info(`service '${name}' registered`);
+                resolve(s);
+            });
+            
+            s.on('request', onRequest);
 
             s.serve();
         });
