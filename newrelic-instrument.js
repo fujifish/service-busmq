@@ -1,7 +1,6 @@
 
 
-try { var newrelic = require('newrelic');
-} catch(ex) {}
+const newrelic = process.env.USE_NEWRELIC && require('newrelic');
 
 newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerModule, moduleName) {
     shim.setLibrary('busmq');

@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/capriza/service-busmq#readme",
   "dependencies": {
-    "busmq": "2.5.0"
+    "busmq": "2.5.0",
+    "newrelic": "2.4.2"
   }
 }
