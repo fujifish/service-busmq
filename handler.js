@@ -23,7 +23,7 @@ class ServiceHandler {
             else throw new Error(`[ServiceHandler] failed to handle request '${methodName}' - missing handler method`);
         }
 
-        return await this[methodName](request);
+        return this[methodName](request);
     }
 
     _buildMethods(obj) {

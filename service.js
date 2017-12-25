@@ -38,7 +38,7 @@ class BusService {
         const handler = this._methodsToHandler[request.method];
         if (!handler) throw new Error(`[${this._name}] unknown request handler for method '${request.method}'`);
 
-        return await handler.handle(request);
+        return handler.handle(request);
     }
 
     validateRequest(request) {}
