@@ -11,6 +11,7 @@ class BusServices extends Emitter {
         this._bus = Bus.create(config);
         this._services = {};
         this._logger = logger(config);
+        this._instrumentLogger(this._logger);
     }
 
     get bus() {
@@ -128,6 +129,8 @@ class BusServices extends Emitter {
             });
         });
     }
+
+    _instrumentLogger() {}
 }
 
 module.exports = { BusServices, BusService, ServiceHandler };

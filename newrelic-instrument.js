@@ -27,6 +27,8 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
 });
 
 newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrokerModule, moduleName) {
+    messageBrokerModule.BusServices.prototype._instrumentLogger = instrumentLogger;
+    
     shim.setLibrary('busmq');
 
     shim.recordSubscribedConsume(messageBrokerModule.BusServices.prototype, 'consume', {
@@ -42,3 +44,29 @@ newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrok
         }
     });
 });
+
+function instrumentLogger(logger) {
+    function setLoggerProtoHook(l) {
+        var lp = Object.getPrototypeOf(l);
+        var lpp = Object.getPrototypeOf(lp);
+        if (!lp || !lpp) return;
+
+        if (lpp.info && lpp.trace) return setLoggerProtoHook(lp);
+        else {
+            const write = lp.write;
+            const hookProto = {
+                write: function(obj) {
+                    const trans = newrelic.getTransaction(), transId = trans && trans._transaction && trans._transaction.id;
+                    if (transId) arguments[0] = typeof obj === 'object' ? Object.assign({ transaction: transId }, obj) : { transaction: transId };
+                    return write.apply(this, arguments);
+                },
+
+                __hooked__: true
+            };
+            hookProto.__proto__ = lp;
+            l.__proto__ = hookProto;
+        }
+    }
+
+    setLoggerProtoHook(logger);
+};
