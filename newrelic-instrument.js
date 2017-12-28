@@ -7,7 +7,6 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
 
     const service = messageBrokerModule.create({}).service('bla');
     const serviceProto = Object.getPrototypeOf(service);
-
     shim.recordProduce(serviceProto, 'request', function(shim, fn, name, args) {
         const request = args[0],
             options = args[1],
@@ -24,6 +23,25 @@ newrelic && newrelic.instrumentMessages('busmq', function(shim, messageBrokerMod
             headers: request.headers
         }
     });
+
+    const request = serviceProto.request;
+    serviceProto.request = function() {
+        const activeSegment = shim.getActiveSegment();
+        if (activeSegment) return request.apply(this, arguments);
+
+        var res;
+        newrelic.startBackgroundTransaction('serviceRequest', null, $ => {
+            const transaction = newrelic.getTransaction(),
+                cb = arguments[arguments.length - 1];
+            arguments[arguments.length - 1] = function() {
+                try { return cb.apply(this, arguments);
+                } finally { transaction.end(); }
+            };
+            res = request.apply(this, arguments);
+        });
+
+        return res;
+    }
 });
 
 newrelic && newrelic.instrumentMessages('./services', function(shim, messageBrokerModule, moduleName) {
