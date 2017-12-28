@@ -49,23 +49,26 @@ function instrumentLogger(logger) {
     function setLoggerProtoHook(l) {
         var lp = Object.getPrototypeOf(l);
         var lpp = Object.getPrototypeOf(lp);
-        if (!lp || !lpp) return;
-
+        if (!lp || !lp.write || !lpp) return;
         if (lpp.info && lpp.trace) return setLoggerProtoHook(lp);
-        else {
-            const write = lp.write;
-            const hookProto = {
-                write: function(obj) {
-                    const trans = newrelic.getTransaction(), transId = trans && trans._transaction && trans._transaction.id;
-                    if (transId) arguments[0] = typeof obj === 'object' ? Object.assign({ transaction: transId }, obj) : { transaction: transId };
-                    return write.apply(this, arguments);
-                },
+        
+        const write = lp.write;
+        const hookProto = {
+            write: function(obj) {
+                const transHandle = newrelic.getTransaction(), trans = transHandle && transHandle._transaction;
+                if (trans) {
+                    const transObj = { transaction: trans.id, refTransaction: trans.referringTransactionGuid };
+                    arguments[0] = obj instanceof Error ? Object.assign(obj, transObj) :
+                        typeof obj === 'object' ? Object.assign(transObj, obj) : transObj;
+                }
+                    
+                return write.apply(this, arguments);
+            },
 
-                __hooked__: true
-            };
-            hookProto.__proto__ = lp;
-            l.__proto__ = hookProto;
-        }
+            __hooked__: true
+        };
+        hookProto.__proto__ = lp;
+        l.__proto__ = hookProto;
     }
 
     setLoggerProtoHook(logger);
