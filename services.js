@@ -47,11 +47,20 @@ class BusServices extends Emitter {
         });
     }
 
-    async consume(name, handler) {
+    async consume(name, count, handler) {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before subscribing a service`);
+
+        if (typeof count === 'function') {
+            handler = count;
+            count = undefined;
+        }
 
         return new Promise((resolve, reject) => {
             var onRequest = async (request, reply) => {
+                if (count && --count === 0) {
+                    s.disconnect();
+                }
+
                 this._logger.debug(`request arrived for service '${name}'`);
                 var res = null, error = null;
                 try { res = await handler(request);
@@ -67,6 +76,7 @@ class BusServices extends Emitter {
             s.once('disconnect', $ => {
                 s.removeListener('request', onRequest);
                 onRequest = undefined;
+                s = undefined;
             });
 
             s.once('serving', $ => {
@@ -98,7 +108,7 @@ class BusServices extends Emitter {
     async request(serviceName, method, request, options) {
         if (!this._connected) throw new Error(`[busServices] bus need to be connected before requesting a service`);
 
-        this._logger.debug(`sending request for method '${method}'`);
+        this._logger.debug(`sending request for service '${serviceName}' with method '${method}'`);
         this._logger.trace(request, `extra request details`);
 
         const service = await this.service(serviceName);

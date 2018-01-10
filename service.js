@@ -4,6 +4,7 @@ const logger = require('./logger');
 class BusService {
     constructor(config) {
         this._name = config.name;
+        this._consumeCount = config.consumeCount;
         this._busServices = config.busServices;
         this._logger = logger(config);
         this._buildMethodsTable(config.handlers);
@@ -11,7 +12,7 @@ class BusService {
 
     async start() {
         await this._busServices.connect();
-        this._service = await this._busServices.consume(this._name, this.handleRequest.bind(this));
+        this._service = await this._busServices.consume(this._name, this._consumeCount, this.handleRequest.bind(this));
         return this._service;
     }
 
