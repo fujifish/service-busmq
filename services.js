@@ -67,8 +67,8 @@ class BusServices extends Emitter {
                     res = await handler(request);
                     this._logger.debug(`request completed for service '${name}'`);
                 } catch(ex) {
-                    error = `RequestException: exception while handling request by service '${name}':\n'${ex}'`;
-                    this._logger.error({ exception: ex.stack }, error);
+                    error = ex;
+                    this._logger.error({ exception: ex.stack }, `RequestException: exception while handling request by service '${name}':\n'${ex}'`);
                 }
                 reply(error, res);
             };
