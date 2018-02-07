@@ -148,7 +148,8 @@ class BusServices extends Emitter {
         (err, reply) => {
           this._logger.debug(
             { msName: serviceName, msMethod: method },
-            `got response for request method '${method}', error: ${err}`
+            `got response for request method '${method}', error: ${err &&
+              (err.stack || err)}`
           );
           //this._logger.trace(reply || {}, `extra reply details, error was ${err}`);
           if (err) reject({ error: err, reply: reply });
