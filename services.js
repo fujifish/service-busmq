@@ -152,7 +152,7 @@ class BusServices extends Emitter {
               (err.stack || err)}`
           );
           //this._logger.trace(reply || {}, `extra reply details, error was ${err}`);
-          if (err) reject({ error: err, reply: reply });
+          if (err) reject(err);
           else resolve(reply);
         }
       );
