@@ -1,3 +1,4 @@
-
-require('./newrelic-instrument');
-module.exports = require('./services');
+module.exports = Object.assign(
+  { newrelic: require("./newrelic-instrument") },
+  require("./services")
+);

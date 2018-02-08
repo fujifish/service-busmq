@@ -116,3 +116,5 @@ function instrumentLogger(logger) {
 
   setLoggerProtoHook(logger);
 }
+
+module.exports = newrelic;
