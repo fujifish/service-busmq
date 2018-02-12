@@ -13,8 +13,9 @@ newrelic &&
     shim.recordProduce(serviceProto, "request", function(shim, fn, name, args) {
       const request = args[0],
         options = args[1],
-        transName = `${request.service || "service"}/${request.method ||
-          "method"}`;
+        transName = `${request.serviceName ||
+          request.service ||
+          "service"}/${request.method || "method"}`;
 
       //newrelic.setTransactionName(transName);
 
@@ -36,7 +37,8 @@ newrelic &&
       var msg = arguments[0] || {},
         res;
       newrelic.startBackgroundTransaction(
-        `${msg.service || "service"}/${msg.method || "method"}`,
+        `${msg.serviceName || msg.service || "service"}/${msg.method ||
+          "method"}`,
         null,
         $ => {
           const transaction = newrelic.getTransaction(),
@@ -75,7 +77,8 @@ newrelic &&
           const request = args[0];
           //shim.insertCATReplyHeader(request.headers, true);
           return {
-            destinationName: `${request.service ||
+            destinationName: `${request.serviceName ||
+              request.service ||
               "service"}/${request.method || "method"}`,
             destinationType: "service",
             headers: request.headers
