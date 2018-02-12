@@ -33,19 +33,24 @@ newrelic &&
       const activeSegment = shim.getActiveSegment();
       if (activeSegment) return request.apply(this, arguments);
 
-      var res;
-      newrelic.startBackgroundTransaction("serviceRequest", null, $ => {
-        const transaction = newrelic.getTransaction(),
-          cb = arguments[arguments.length - 1];
-        arguments[arguments.length - 1] = function() {
-          try {
-            return cb.apply(this, arguments);
-          } finally {
-            transaction.end();
-          }
-        };
-        res = request.apply(this, arguments);
-      });
+      var msg = arguments[0] || {},
+        res;
+      newrelic.startBackgroundTransaction(
+        `${msg.service || "service"}/${msg.method || "method"}`,
+        null,
+        $ => {
+          const transaction = newrelic.getTransaction(),
+            cb = arguments[arguments.length - 1];
+          arguments[arguments.length - 1] = function() {
+            try {
+              return cb.apply(this, arguments);
+            } finally {
+              transaction.end();
+            }
+          };
+          res = request.apply(this, arguments);
+        }
+      );
 
       return res;
     };
