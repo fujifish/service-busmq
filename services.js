@@ -35,7 +35,8 @@ class BusServices extends Emitter {
           return;
         }
 
-        Object.defineProperty(this, "_connected", { value: true });
+        this._connected = true;
+
         this.emit("online");
         resolve();
       });
@@ -49,7 +50,10 @@ class BusServices extends Emitter {
   }
 
   async disconnect() {
-    if (this._connected) return this._bus.disconnect();
+    if (this._connected) {
+      this._bus.disconnect();
+      this._connected = false;
+    }
   }
 
   async consume(name, count, handler) {
