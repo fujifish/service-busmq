@@ -48,6 +48,10 @@ class BusServices extends Emitter {
     });
   }
 
+  async disconnect() {
+    if (this._connected) return this._bus.disconnect();
+  }
+
   async consume(name, count, handler) {
     if (!this._connected)
       throw new Error(
