@@ -27,7 +27,7 @@
   "homepage": "https://github.com/capriza/service-busmq#readme",
   "dependencies": {
     "busmq": "2.9.2",
-    "newrelic": "2.4.2"
+    "newrelic": "2.7.1"
   },
   "devDependencies": {
     "husky": "0.15.0-rc.5",
