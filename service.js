@@ -39,18 +39,22 @@ class BusService {
       `'${this._name}' start handling request for method '${request.method}'`
     );
 
-    this.validateRequest(request);
-
-    const handler = this._methodsToHandler[request.method];
-    if (!handler)
-      throw new Error(
-        `[${this._name}] unknown request handler for method '${request.method}'`
-      );
+    const handler = this.getHandler(request);
+    this.validateRequest(request, handler);
 
     return handler.handle(request);
   }
 
-  validateRequest(request) {}
+  getHandler(request) {
+    return this._methodsToHandler[request.method];
+  }
+
+  validateRequest(request, handler) {
+    if (!handler)
+      throw new Error(
+        `[${this._name}] unknown request handler for method '${request.method}'`
+      );
+  }
 
   _buildMethodsTable(handlers) {
     this._methodsToHandler = {};
