@@ -40,9 +40,18 @@ class BusService {
     );
 
     const handler = this.getHandler(request);
-    this.validateRequest(request, handler);
-
-    return handler.handle(request);
+    try {
+      this.validateRequest(request, handler);
+      return await handler.handle(request);
+    } catch (ex) {
+      this._logger.error(
+        { exception: ex.stack },
+        `'${this._name}' failed during handling request for method '${
+          request.method
+        }' - exception:\n'${ex}'`
+      );
+      throw ex;
+    }
   }
 
   getHandler(request) {
