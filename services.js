@@ -91,7 +91,7 @@ class BusServices extends Emitter {
 
         reply(error, res);
 
-        if (max && --max === 0) setTimoeut($ => s.disconnect(), 0);
+        if (max && --max === 0) setTimeout($ => s.disconnect(), 0);
       };
 
       var s = this._bus.service(name);
