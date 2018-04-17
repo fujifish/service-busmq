@@ -56,23 +56,19 @@ class BusServices extends Emitter {
     }
   }
 
-  async consume(name, count, handler) {
+  async consume(name, max, handler) {
     if (!this._connected)
       throw new Error(
         `[busServices] bus need to be connected before subscribing a service`
       );
 
-    if (typeof count === "function") {
-      handler = count;
-      count = undefined;
+    if (typeof max === "function") {
+      handler = max;
+      max = undefined;
     }
 
     return new Promise((resolve, reject) => {
       var onRequest = async (request, reply) => {
-        if (count && --count === 0) {
-          s.disconnect();
-        }
-
         this._logger.debug(
           { msName: name },
           `request arrived for service '${name}'`
@@ -92,7 +88,10 @@ class BusServices extends Emitter {
             `RequestException: exception while handling request by service '${name}':\n'${ex}'`
           );
         }
+
         reply(error, res);
+
+        if (max && --max === 0) setTimoeut($ => s.disconnect(), 0);
       };
 
       var s = this._bus.service(name);
@@ -110,7 +109,7 @@ class BusServices extends Emitter {
 
       s.on("request", onRequest);
 
-      s.serve();
+      s.serve({ max });
     });
   }
 
@@ -123,12 +122,21 @@ class BusServices extends Emitter {
 
     return new Promise((resolve, reject) => {
       var s = this._bus.service(name);
-      s.on("disconnect", $ => delete this._services[name]);
+      s.on("disconnect", $ => {
+        if (this._services[name] === s) delete this._services[name];
+      });
       s.connect($ => {
         this._logger.info(
           { msName: name },
           `client service '${name}' connected`
         );
+
+        if (this._services[name]) {
+          setTimeout($ => s.disconnect(), 0);
+          resolve(this._services[name]);
+          return;
+        }
+
         this._services[name] = s;
         resolve(s);
       });
