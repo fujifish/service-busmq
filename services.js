@@ -89,18 +89,30 @@ class BusServices extends Emitter {
           );
         }
 
-        if (max && --max === 0) setTimeout($ => s.disconnect(), 0);
+        if (max && --max === 0) {
+          setTimeout($ => {
+            if (s) {
+              setTimeout(onServiceDisconnected, 0);
+              s.disconnect();
+            }
+          }, 0);
+        }
 
         reply(error, res);
       };
 
-      var s = this._bus.service(name);
-
-      s.once("disconnect", $ => {
-        s.removeListener("request", onRequest);
+      var onServiceDisconnected = $ => {
+        if (s) {
+          s.removeListener("request", onRequest);
+          this._logger.debug(`service '${name}' disconnected`);
+        }
         onRequest = undefined;
         s = undefined;
-      });
+      };
+
+      var s = this._bus.service(name);
+
+      s.once("disconnect", onServiceDisconnected);
 
       s.once("serving", $ => {
         this._logger.info({ msName: name }, `service '${name}' registered`);
