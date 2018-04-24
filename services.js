@@ -84,14 +84,14 @@ class BusServices extends Emitter {
         } catch (ex) {
           error = ex;
           this._logger.error(
-            { msName: name, exception: ex.stack },
+            { msName: name, exception: ex && ex.stack },
             `RequestException: exception while handling request by service '${name}':\n'${ex}'`
           );
         }
 
-        reply(error, res);
-
         if (max && --max === 0) setTimeout($ => s.disconnect(), 0);
+
+        reply(error, res);
       };
 
       var s = this._bus.service(name);
