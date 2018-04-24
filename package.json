@@ -1,6 +1,6 @@
 {
   "name": "service-busmq",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "Microservices over busmq",
   "main": "index.js",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/capriza/service-busmq#readme",
   "dependencies": {
-    "busmq": "2.9.3",
+    "busmq": "2.9.4",
     "newrelic": "2.7.1"
   },
   "devDependencies": {
