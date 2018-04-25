@@ -89,8 +89,6 @@ class BusServices extends Emitter {
           );
         }
 
-        if (max && --max === 0) setTimeout($ => s && s.disconnect(), 0);
-
         reply(error, res);
       };
 
