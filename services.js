@@ -89,14 +89,7 @@ class BusServices extends Emitter {
           );
         }
 
-        if (max && --max === 0) {
-          setTimeout($ => {
-            if (s) {
-              setTimeout(onServiceDisconnected, 0);
-              s.disconnect();
-            }
-          }, 0);
-        }
+        if (max && --max === 0) setTimeout($ => s && s.disconnect(), 0);
 
         reply(error, res);
       };
