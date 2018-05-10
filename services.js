@@ -166,9 +166,10 @@ class BusServices extends Emitter {
         options,
         (err, reply) => {
           let logMessage =
-            typeof options.logReply === "function" ?
-              options.logReply(err, reply) :
-              `got response for request method '${method}', error: ${err && (err.stack || err)}`;
+            options && typeof options.logReply === "function"
+              ? options.logReply(err, reply)
+              : `got response for request method '${method}', error: ${err &&
+                  (err.stack || err)}`;
           this._logger.debug(
             { msName: serviceName, msMethod: method },
             logMessage
