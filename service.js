@@ -20,7 +20,7 @@ class BusService {
   }
 
   async stop(gracePeriod) {
-    if (!this._service || !this._service.isConnected()) return;
+    if (!this._service || !this._service.isServing()) return;
 
     return new Promise((resolve, reject) => {
       const onDisconnect = $ => {
@@ -63,6 +63,10 @@ class BusService {
       throw new Error(
         `[${this._name}] unknown request handler for method '${request.method}'`
       );
+  }
+
+  get methods() {
+    return this._methodsToHandler ? Object.keys(this._methodsToHandler) : [];
   }
 
   _buildMethodsTable(handlers) {
