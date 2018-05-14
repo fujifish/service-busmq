@@ -23,7 +23,7 @@ class BusService {
     if (!this._service || !this._service.isServing()) return;
 
     return new Promise((resolve, reject) => {
-      const onDisconnect = $ => {
+      var onDisconnect = $ => {
         this._service.removeListener("disconnect", onDisconnect);
         onDisconnect = undefined;
         resolve();
