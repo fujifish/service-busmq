@@ -8,6 +8,7 @@ class BusServices extends Emitter {
   constructor(config) {
     super();
     this._bus = Bus.create(config);
+    this._connectCalls = [];
     this._services = {};
     this._logger = logger(config);
     this._instrumentLogger(this._logger);
@@ -18,42 +19,26 @@ class BusServices extends Emitter {
   }
 
   async connect() {
+    if (this._disconnecting)
+      throw new Error(`[busServices] failed to connect while disconnecting`);
     if (this._connected) return;
 
+    this._connecting = true;
     return new Promise((resolve, reject) => {
-      this._bus.on("offline", $ => {
-        this._logger.info(`bus disconnected`);
-        this.emit("offline");
-      });
-
-      this._bus.on("online", async () => {
-        this._logger.info(
-          `bus ${this._connected ? "reconnected" : "connected"}`
-        );
-        if (this._connected) {
-          this.emit("online");
-          return;
-        }
-
-        this._connected = true;
-
-        this.emit("online");
-        resolve();
-      });
-
-      this._bus.on("error", err => {
-        this._logger.info(`bus error: ${err}`);
-      });
-
+      this._connectCalls.push({ resolve, reject });
+      this._setBusListeners();
       this._bus.connect();
     });
   }
 
   async disconnect() {
-    if (this._connected) {
-      this._bus.disconnect();
-      this._connected = false;
-    }
+    if (this._connecting)
+      throw new Error(`[busServices] failed to disconnect while connecting`);
+    if (!this._connected) return;
+
+    this._connected = false;
+    this._disconnecting = true;
+    this._bus.disconnect();
   }
 
   async consume(name, max, handler) {
@@ -205,6 +190,46 @@ class BusServices extends Emitter {
         }
       });
     });
+  }
+
+  _setBusListeners() {
+    if (this._listeningToBus) return;
+
+    this._bus.on("offline", err => {
+      this._logger.info(`bus disconnected`);
+      this.emit("offline");
+      this._disconnecting = false;
+      if (this._connecting) this._connectCompleted(err ? err : "offline");
+    });
+
+    this._bus.on("online", async () => {
+      this._logger.info(`bus ${this._connected ? "reconnected" : "connected"}`);
+      this._connecting = false;
+
+      if (this._connected) {
+        this.emit("online");
+        return;
+      }
+
+      this._connected = true;
+
+      this.emit("online");
+
+      this._connectCompleted();
+    });
+
+    this._bus.on("error", err => {
+      this._logger.info(`bus error: ${err}`);
+      if (this._connecting) this._connectCompleted(err ? err : "error");
+    });
+
+    this._listeningToBus = true;
+  }
+
+  _connectCompleted(err) {
+    this._connectCalls
+      .splice(0, this._connectCalls.length)
+      .forEach(c => (err ? c.reject(err) : c.resolve()));
   }
 
   _instrumentLogger() {}
