@@ -36,6 +36,7 @@ class BusServices extends Emitter {
       throw new Error(`[busServices] failed to disconnect while connecting`);
     if (!this._connected) return;
 
+    delete this._connections;
     this._connected = false;
     this._disconnecting = true;
     this._bus.disconnect();
@@ -168,13 +169,14 @@ class BusServices extends Emitter {
   }
 
   async connection(key) {
-    if (!this._bus)
+    if (!this._connected || this._disconnecting)
       throw new Error(
-        `[busServices] failed to get bus connection - bus was not set`
+        `[busServices] failed to get bus connection - bus is not connected`
       );
 
     this._connections = this._connections || {};
-    if (this._connections[key]) return this._connections[key];
+    if (this._connections[key] && this._connections[key].isReady())
+      return this._connections[key];
 
     return new Promise((resolve, reject) => {
       this._bus.connection(key, connection => {
