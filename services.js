@@ -78,6 +78,10 @@ class BusServices extends Emitter {
         reply(error, res);
       };
 
+      var onError = err => {
+        this._logger.debug(`error on service '${name}': ${err}`);
+      };
+
       var onServiceDisconnected = $ => {
         if (s) {
           s.removeListener("request", onRequest);
@@ -95,6 +99,8 @@ class BusServices extends Emitter {
         this._logger.info({ msName: name }, `service '${name}' registered`);
         resolve(s);
       });
+
+      s.on("error", onError);
 
       s.on("request", onRequest);
 
