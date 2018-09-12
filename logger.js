@@ -7,7 +7,10 @@ function logger(config) {
       info: noop,
       error: noop,
       warn: noop,
-      child: logger
+      child: logger,
+      isLevelEnabled() {
+        return true;
+      }
     }
   );
 }

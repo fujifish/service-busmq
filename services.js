@@ -11,6 +11,10 @@ class BusServices extends Emitter {
     this._connectCalls = [];
     this._services = {};
     this._logger = logger(config);
+    if (this._logger.isLevelEnabled("trace")) {
+      this._bus.debug(true);
+      this._bus.withLog(this._logger);
+    }
     this._instrumentLogger(this._logger);
   }
 
