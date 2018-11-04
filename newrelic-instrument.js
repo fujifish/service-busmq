@@ -16,6 +16,7 @@ newrelic &&
         transName = `${request.serviceName ||
           request.service ||
           "service"}/${request.method || "method"}`;
+      if (options && options.ignoreMonitoring) return;
 
       //newrelic.setTransactionName(transName);
 
@@ -32,10 +33,12 @@ newrelic &&
     const request = serviceProto.request;
     serviceProto.request = function() {
       const activeSegment = shim.getActiveSegment();
-      if (activeSegment) return request.apply(this, arguments);
-
       var msg = arguments[0] || {},
+        options = arguments[1] || {},
         res;
+      if (activeSegment || options.ignoreMonitoring)
+        return request.apply(this, arguments);
+
       newrelic.startBackgroundTransaction(
         `${msg.serviceName || msg.service || "service"}/${msg.method ||
           "method"}`,
