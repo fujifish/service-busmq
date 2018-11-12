@@ -1,4 +1,6 @@
 const newrelic = process.env.USE_NEWRELIC && require("newrelic");
+const pino = require("pino");
+const pinoWriteSym = pino.symbols.writeSym;
 
 newrelic &&
   newrelic.instrumentMessages("busmq", function(
@@ -95,12 +97,13 @@ function instrumentLogger(logger) {
   function setLoggerProtoHook(l) {
     var lp = Object.getPrototypeOf(l);
     var lpp = Object.getPrototypeOf(lp);
-    if (!lp || !lp.write || !lpp) return;
+    if (!lp || (!lp.write && !lp[pinoWriteSym]) || !lpp) return;
     if (lpp.info && lpp.trace) return setLoggerProtoHook(lp);
 
-    const write = lp.write;
+    const writeName = lp.write ? "write" : pinoWriteSym;
+    const write = lp[writeName];
     const hookProto = {
-      write: function(obj) {
+      [writeName]: function(obj) {
         const transHandle = newrelic.getTransaction(),
           trans = transHandle && transHandle._transaction;
         if (trans) {
