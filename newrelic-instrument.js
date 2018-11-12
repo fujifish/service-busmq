@@ -102,30 +102,21 @@ function instrumentLogger(logger) {
 
     const writeName = lp.write ? "write" : pinoWriteSym;
     const write = lp[writeName];
-    const hookProto = {
-      [writeName]: function(obj) {
-        const transHandle = newrelic.getTransaction(),
-          trans = transHandle && transHandle._transaction;
-        if (trans) {
-          const transObj = {
-            transaction: trans.id,
-            refTransaction: trans.referringTransactionGuid
-          };
-          arguments[0] =
-            obj instanceof Error
-              ? Object.assign(obj, transObj)
-              : typeof obj === "object"
-                ? Object.assign(transObj, obj)
-                : transObj;
-        }
-
-        return write.apply(this, arguments);
-      },
-
-      __hooked__: true
+    lp[writeName] = function(obj) {
+      const transHandle = newrelic.getTransaction(),
+        trans = transHandle && transHandle._transaction;
+      if (trans) {
+        const transObj = {
+          transaction: trans.id,
+          refTransaction: trans.referringTransactionGuid
+        };
+        arguments[0] =
+          obj instanceof Error
+            ? Object.assign(obj, transObj)
+            : typeof obj === "object" ? Object.assign(transObj, obj) : transObj;
+      }
+      return write.apply(this, arguments);
     };
-    hookProto.__proto__ = lp;
-    l.__proto__ = hookProto;
   }
 
   setLoggerProtoHook(logger);
