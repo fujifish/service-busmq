@@ -159,7 +159,7 @@ class BusServices extends Emitter {
     return new Promise((resolve, reject) => {
       service.request(
         Object.assign({ service: serviceName, method }, request),
-        options,
+        Object.assign({ reqTimeout: 5000 }, options),
         (err, reply) => {
           let logMessage =
             options && typeof options.logReply === "function"
