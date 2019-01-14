@@ -2,6 +2,12 @@ const newrelic = process.env.USE_NEWRELIC && require("newrelic");
 const pino = require("pino");
 const pinoWriteSym = pino.symbols.writeSym;
 
+function getTransNameFromRequest(request) {
+  return `${request.serviceName ||
+    request.service ||
+    "service"}/${request.method || "method"}`;
+}
+
 newrelic &&
   newrelic.instrumentMessages("busmq", function(
     shim,
@@ -15,9 +21,7 @@ newrelic &&
     shim.recordProduce(serviceProto, "request", function(shim, fn, name, args) {
       const request = args[0],
         options = args[1],
-        transName = `${request.serviceName ||
-          request.service ||
-          "service"}/${request.method || "method"}`;
+        transName = getTransNameFromRequest(request);
       if (options && options.ignoreMonitoring) return;
 
       //newrelic.setTransactionName(transName);
@@ -42,8 +46,7 @@ newrelic &&
         return request.apply(this, arguments);
 
       newrelic.startBackgroundTransaction(
-        `${msg.serviceName || msg.service || "service"}/${msg.method ||
-          "method"}`,
+        getTransNameFromRequest(msg),
         null,
         $ => {
           const transaction = newrelic.getTransaction(),
@@ -82,9 +85,7 @@ newrelic &&
           const request = args[0];
           //shim.insertCATReplyHeader(request.headers, true);
           return {
-            destinationName: `${request.serviceName ||
-              request.service ||
-              "service"}/${request.method || "method"}`,
+            destinationName: getTransNameFromRequest(request),
             destinationType: "service",
             headers: request.headers
           };

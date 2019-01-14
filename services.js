@@ -46,7 +46,7 @@ class BusServices extends Emitter {
     this._bus.disconnect();
   }
 
-  async consume(name, max, handler) {
+  async consume(serviceName, serviceMethod, max, handler) {
     if (!this._connected)
       throw new Error(
         `[busServices] bus need to be connected before subscribing a service`
@@ -57,24 +57,28 @@ class BusServices extends Emitter {
       max = undefined;
     }
 
+    const name = this._getServiceFQN(serviceName, serviceMethod);
+    const msLogObj = {
+      msFQN: name,
+      msName: serviceName,
+      msMethod: serviceMethod
+    };
+
     return new Promise((resolve, reject) => {
       var onRequest = async (request, reply) => {
-        this._logger.debug(
-          { msName: name },
-          `request arrived for service '${name}'`
-        );
+        this._logger.debug(msLogObj, `request arrived for service '${name}'`);
         var res = null,
           error = null;
         try {
           res = await handler(request);
           this._logger.debug(
-            { msName: name },
+            msLogObj,
             `request completed for service '${name}'`
           );
         } catch (ex) {
           error = ex;
           this._logger.error(
-            { msName: name, exception: ex && ex.stack },
+            Object.assign({ exception: ex && ex.stack }, msLogObj),
             `RequestException: exception while handling request by service '${name}':\n'${ex}'`
           );
         }
@@ -100,7 +104,7 @@ class BusServices extends Emitter {
       s.once("disconnect", onServiceDisconnected);
 
       s.once("serving", $ => {
-        this._logger.info({ msName: name }, `service '${name}' registered`);
+        this._logger.info(msLogObj, `service '${name}' registered`);
         resolve(s);
       });
 
@@ -126,7 +130,7 @@ class BusServices extends Emitter {
       });
       s.connect($ => {
         this._logger.info(
-          { msName: name },
+          { msFQN: name },
           `client service '${name}' connected`
         );
 
@@ -142,34 +146,38 @@ class BusServices extends Emitter {
     });
   }
 
-  async request(serviceName, method, request, options) {
+  async request(serviceName, serviceMethod, request, options) {
     if (!this._connected)
       throw new Error(
         `[busServices] bus need to be connected before requesting a service`
       );
 
-    this._logger.debug(
-      { msName: serviceName, msMethod: method },
-      `sending request for service '${serviceName}' with method '${method}'`
-    );
+    const name = this._getServiceFQN(serviceName, serviceMethod);
+    const msLogObj = {
+      msFQN: name,
+      msName: serviceName,
+      msMethod: serviceMethod
+    };
+
+    this._logger.debug(msLogObj, `sending request for service '${name}'`);
     //this._logger.trace(request, `extra request details`);
 
-    const service = await this.service(serviceName);
+    const service = await this.service(name);
 
     return new Promise((resolve, reject) => {
       service.request(
-        Object.assign({ service: serviceName, method }, request),
+        Object.assign(
+          { serviceFQN: name, service: serviceName, method: serviceMethod },
+          request
+        ),
         Object.assign({ reqTimeout: 5000 }, options),
         (err, reply) => {
           let logMessage =
             options && typeof options.logReply === "function"
               ? options.logReply(err, reply)
-              : `got response for request method '${method}', error: ${err &&
+              : `got response from service '${name}', error: ${err &&
                   (err.stack || err)}`;
-          this._logger.debug(
-            { msName: serviceName, msMethod: method },
-            logMessage
-          );
+          this._logger.debug(msLogObj, logMessage);
           //this._logger.trace(reply || {}, `extra reply details, error was ${err}`);
           if (err) reject(err);
           else resolve(reply);
@@ -242,6 +250,10 @@ class BusServices extends Emitter {
     this._connectCalls
       .splice(0, this._connectCalls.length)
       .forEach(c => (err ? c.reject(err) : c.resolve()));
+  }
+
+  _getServiceFQN(serviceName, method) {
+    return `${serviceName}/${method}`;
   }
 
   _instrumentLogger() {}
