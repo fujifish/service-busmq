@@ -36,41 +36,9 @@ class BusService {
 
   async stop(gracePeriod) {
     this._logger.debug(`Stopping '${this._name}' service`);
-    const services = this._services.slice();
-    await Promise.all(
-      services.map(service => {
-        return new Promise((resolve, reject) => {
-          const _resolve = $ => {
-            const index = this._services.findIndex(
-              service2 => service === service2
-            );
-            if (index > -1) this._services.splice(index, 1);
-            resolve();
-          };
-
-          var onDisconnect = $ => {
-            service.removeListener("disconnect", onDisconnect);
-            onDisconnect = undefined;
-            _resolve();
-          };
-
-          if (!service.isServing()) {
-            return _resolve();
-          }
-
-          service.on("disconnect", onDisconnect);
-          service.disconnect(gracePeriod);
-        });
-      })
-    );
-
-    if (this._services.length > 0)
-      this._logger.warn(
-        `'${this._name}' service stop completed with ${
-          this._services.length
-        } services still registered`
-      );
-    else this._logger.debug(`'${this._name}' service stopped`);
+    this._services.forEach(service => service.disconnect(gracePeriod));
+    this._services = [];
+    this._logger.debug(`'${this._name}' service stopped`);
   }
 
   async handleRequest(request) {
