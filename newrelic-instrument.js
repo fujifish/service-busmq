@@ -109,7 +109,7 @@ function instrumentLogger(logger) {
       if (trans) {
         const transObj = {
           transaction: trans.id,
-          refTransaction: trans.referringTransactionGuid
+          traceId: trans.traceId
         };
         arguments[0] =
           obj instanceof Error
