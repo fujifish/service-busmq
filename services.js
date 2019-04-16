@@ -3,6 +3,14 @@ const Emitter = require("events").EventEmitter;
 const Bus = require("busmq");
 const BusService = require("./service");
 const ServiceHandler = require("./handler");
+const fs = require("fs");
+
+var file = __dirname + "/lua/aquireRunLock.lua";
+var aquireRunLockScript = null;
+fs.readFile(file, function(err, content) {
+  if (err) return;
+  aquireRunLockScript = content.toString().trim();
+});
 
 class BusServices extends Emitter {
   constructor(config) {
@@ -206,9 +214,50 @@ class BusServices extends Emitter {
           );
         else {
           this._connections[key] = connection;
+          this._loadScript(key);
           resolve(connection);
         }
       });
+    });
+  }
+
+  async aquireRunLock(connectionKey, runLockKey, lockExpiration) {
+    const conn = await this.connection(connectionKey);
+   
+    if (!this._aquireLockScriptSha || !this._aquireLockScriptSha[connectionKey]) 
+      throw new Error(
+        `[busServices] failed to get sha for aquire run lock script`
+      );
+      
+    return new Promise((resolve, reject) => {
+      conn.evalsha(
+        this._aquireLockScriptSha[connectionKey],
+        1,
+        runLockKey,
+        lockExpiration,
+        (err, resp) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          this._logger.info(
+            `lock aquired ${resp}`
+          );
+          resolve(resp);
+        }
+      );
+    });
+  }
+
+  async _loadScript(key) {
+    this._aquireLockScriptSha = this._aquireLockScriptSha || {};
+    this._connections[key].script("load", aquireRunLockScript, (err, resp) => {
+      if (err) {
+        this._logger.debug(`error loading aquireRunLockScript ${err}`);
+        return;
+      }
+      this._logger.info(`aquireRunLockScript ${resp}`);
+      this._aquireLockScriptSha[key] = resp;
     });
   }
 
