@@ -215,8 +215,12 @@ class BusServices extends Emitter {
           );
         else {
           this._connections[key] = connection;
-          this._loadScript(key);
-          resolve(connection);
+          this._loadScript(key).then((res) => {
+            this._acquireLockScriptSha[key] = res;
+            resolve(connection);
+          }).catch(() => {
+            resolve(connection);
+          })
         }
       });
     });
@@ -267,13 +271,16 @@ class BusServices extends Emitter {
 
   async _loadScript(key) {
     this._acquireLockScriptSha = this._acquireLockScriptSha || {};
-    this._connections[key].script("load", acquireRunLockScript, (err, resp) => {
-      if (err) {
-        this._logger.debug(`error loading acquireRunLockScript ${err}`);
-        return;
-      }
-      this._logger.info(`acquireRunLockScript ${resp}`);
-      this._acquireLockScriptSha[key] = resp;
+    return new Promise((resolve, reject) => {
+      this._connections[key].script("load", acquireRunLockScript, (err, resp) => {
+        if (err) {
+          this._logger.debug(`error loading acquireRunLockScript ${err}`);
+          resolve();
+          return;
+        }
+        this._logger.info(`acquireRunLockScript ${resp}`);
+        resolve(resp);
+      });
     });
   }
 
