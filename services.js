@@ -5,11 +5,11 @@ const BusService = require("./service");
 const ServiceHandler = require("./handler");
 const fs = require("fs");
 
-var file = __dirname + "/lua/aquireRunLock.lua";
-var aquireRunLockScript = null;
+var file = __dirname + "/lua/acquireRunLock.lua";
+var acquireRunLockScript = null;
 fs.readFile(file, function(err, content) {
   if (err) return;
-  aquireRunLockScript = content.toString().trim();
+  acquireRunLockScript = content.toString().trim();
 });
 
 class BusServices extends Emitter {
@@ -49,6 +49,7 @@ class BusServices extends Emitter {
     if (!this._connected) return;
 
     delete this._connections;
+    this._acquireLockScriptSha = null;
     this._connected = false;
     this._disconnecting = true;
     this._bus.disconnect();
@@ -221,17 +222,17 @@ class BusServices extends Emitter {
     });
   }
 
-  async aquireRunLock(connectionKey, runLockKey, lockExpiration) {
+  async acquireRunLock(connectionKey, runLockKey, lockExpiration) {
     const conn = await this.connection(connectionKey);
    
-    if (!this._aquireLockScriptSha || !this._aquireLockScriptSha[connectionKey]) 
+    if (!this._acquireLockScriptSha || !this._acquireLockScriptSha[connectionKey]) 
       throw new Error(
-        `[busServices] failed to get sha for aquire run lock script`
+        `[busServices] failed to get sha for acquire run lock script`
       );
       
     return new Promise((resolve, reject) => {
       conn.evalsha(
-        this._aquireLockScriptSha[connectionKey],
+        this._acquireLockScriptSha[connectionKey],
         1,
         runLockKey,
         lockExpiration,
@@ -241,7 +242,7 @@ class BusServices extends Emitter {
             return;
           }
           this._logger.info(
-            `lock aquired ${resp}`
+            `lock acquired ${resp}`
           );
           resolve(resp);
         }
@@ -249,15 +250,30 @@ class BusServices extends Emitter {
     });
   }
 
+  async releaseRunLock(connectionKey, runLockKey) {
+    const conn = await this.connection(connectionKey);
+
+    return new Promise((resolve, reject) => {
+      conn.del(runLockKey, (error, reply) => {
+        if (error)
+        this._logger.debug(
+            `failed to delete key '${runLockKey}', error: ${error}`
+          );
+        else this._logger.info(`key '${runLockKey}' was deleted`);
+        resolve(reply);
+      });
+    });
+  }
+
   async _loadScript(key) {
-    this._aquireLockScriptSha = this._aquireLockScriptSha || {};
-    this._connections[key].script("load", aquireRunLockScript, (err, resp) => {
+    this._acquireLockScriptSha = this._acquireLockScriptSha || {};
+    this._connections[key].script("load", acquireRunLockScript, (err, resp) => {
       if (err) {
-        this._logger.debug(`error loading aquireRunLockScript ${err}`);
+        this._logger.debug(`error loading acquireRunLockScript ${err}`);
         return;
       }
-      this._logger.info(`aquireRunLockScript ${resp}`);
-      this._aquireLockScriptSha[key] = resp;
+      this._logger.info(`acquireRunLockScript ${resp}`);
+      this._acquireLockScriptSha[key] = resp;
     });
   }
 
