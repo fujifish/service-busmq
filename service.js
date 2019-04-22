@@ -5,6 +5,7 @@ class BusService {
     this._name = config.name;
     this._consumeCount = config.consumeCount;
     this._busServices = config.busServices;
+    this._throttle = config.throttle;
     this._logger = logger(config).child({ msName: this._name });
     this._services = [];
     this._buildMethodsTable(config.handlers);
@@ -28,7 +29,7 @@ class BusService {
           method,
           this._consumeCount,
           this.handleRequest.bind(this),
-          config.throttle
+          this._throttle
         )
       );
     }
