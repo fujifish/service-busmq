@@ -27,7 +27,8 @@ class BusService {
           this._name,
           method,
           this._consumeCount,
-          this.handleRequest.bind(this)
+          this.handleRequest.bind(this),
+          config.throttle
         )
       );
     }

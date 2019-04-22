@@ -55,7 +55,7 @@ class BusServices extends Emitter {
     this._bus.disconnect();
   }
 
-  async consume(serviceName, serviceMethod, max, handler) {
+  async consume(serviceName, serviceMethod, max, handler, throttle) {
     if (!this._connected)
       throw new Error(
         `[busServices] bus need to be connected before subscribing a service`
@@ -121,7 +121,7 @@ class BusServices extends Emitter {
 
       s.on("request", onRequest);
 
-      s.serve({ max });
+      s.serve({ max, throttle });
     });
   }
 
