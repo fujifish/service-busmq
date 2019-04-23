@@ -3,6 +3,7 @@ const Emitter = require("events").EventEmitter;
 const Bus = require("busmq");
 const BusService = require("./service");
 const ServiceHandler = require("./handler");
+const cpuMeasure = require("./cpuMeasure");
 const fs = require("fs");
 
 var file = __dirname + "/lua/acquireRunLock.lua";
@@ -24,6 +25,19 @@ class BusServices extends Emitter {
       this._bus.withLog(this._logger);
     }
     this._instrumentLogger(this._logger);
+    if (config.throttle) {
+      this._throttle = cb => {
+        this._logger.info(`throttle cpu ${cpuMeasure.cpuPercent}`);
+        const timeout = Math.min(1 * cpuMeasure.cpuPercent, 50);
+        cpuMeasure.cpuPercent > 5
+          ? setTimeout(() => {
+              cb();
+            }, timeout)
+          : cb();
+      };
+
+      cpuMeasure.initCpuMeasure(process.hrtime(), process.cpuUsage());
+    }
   }
 
   get bus() {
@@ -121,7 +135,7 @@ class BusServices extends Emitter {
 
       s.on("request", onRequest);
 
-      s.serve({ max, throttle });
+      s.serve({ max, throttle: throttle || this._throttle });
     });
   }
 
@@ -215,12 +229,14 @@ class BusServices extends Emitter {
           );
         else {
           this._connections[key] = connection;
-          this._loadScript(key).then((res) => {
-            this._acquireLockScriptSha[key] = res;
-            resolve(connection);
-          }).catch(() => {
-            resolve(connection);
-          })
+          this._loadScript(key)
+            .then(res => {
+              this._acquireLockScriptSha[key] = res;
+              resolve(connection);
+            })
+            .catch(() => {
+              resolve(connection);
+            });
         }
       });
     });
@@ -228,12 +244,15 @@ class BusServices extends Emitter {
 
   async acquireRunLock(connectionKey, runLockKey, lockExpiration) {
     const conn = await this.connection(connectionKey);
-   
-    if (!this._acquireLockScriptSha || !this._acquireLockScriptSha[connectionKey]) 
+
+    if (
+      !this._acquireLockScriptSha ||
+      !this._acquireLockScriptSha[connectionKey]
+    )
       throw new Error(
         `[busServices] failed to get sha for acquire run lock script`
       );
-      
+
     return new Promise((resolve, reject) => {
       conn.evalsha(
         this._acquireLockScriptSha[connectionKey],
@@ -245,9 +264,7 @@ class BusServices extends Emitter {
             reject(err);
             return;
           }
-          this._logger.info(
-            `lock acquired ${resp}`
-          );
+          this._logger.info(`lock acquired ${resp}`);
           resolve(resp);
         }
       );
@@ -260,7 +277,7 @@ class BusServices extends Emitter {
     return new Promise((resolve, reject) => {
       conn.del(runLockKey, (error, reply) => {
         if (error)
-        this._logger.debug(
+          this._logger.debug(
             `failed to delete key '${runLockKey}', error: ${error}`
           );
         else this._logger.info(`key '${runLockKey}' was deleted`);
@@ -272,15 +289,19 @@ class BusServices extends Emitter {
   async _loadScript(key) {
     this._acquireLockScriptSha = this._acquireLockScriptSha || {};
     return new Promise((resolve, reject) => {
-      this._connections[key].script("load", acquireRunLockScript, (err, resp) => {
-        if (err) {
-          this._logger.debug(`error loading acquireRunLockScript ${err}`);
-          resolve();
-          return;
+      this._connections[key].script(
+        "load",
+        acquireRunLockScript,
+        (err, resp) => {
+          if (err) {
+            this._logger.debug(`error loading acquireRunLockScript ${err}`);
+            resolve();
+            return;
+          }
+          this._logger.info(`acquireRunLockScript ${resp}`);
+          resolve(resp);
         }
-        this._logger.info(`acquireRunLockScript ${resp}`);
-        resolve(resp);
-      });
+      );
     });
   }
 
