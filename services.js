@@ -17,6 +17,7 @@ class BusServices extends Emitter {
   constructor(config) {
     super();
     this._bus = Bus.create(config);
+    this._retryOnResetConnectionCounter = 1;
     this._connectCalls = [];
     this._services = {};
     this._logger = logger(config);
@@ -334,9 +335,41 @@ class BusServices extends Emitter {
     this._bus.on("error", err => {
       this._logger.info(`bus error: ${err}`);
       if (this._connecting) this._connectCompleted(err ? err : "error");
+      if (err && err.message.indexOf("ECONNRESET") > -1) {
+        setTimeout(
+          this._retryConnection.bind(this),
+          Math.min(1000 * this._retryOnResetConnectionCounter, 30 * 1000)
+        );
+      } else {
+        this._retryOnResetConnectionCounter = 1;
+      }
     });
 
     this._listeningToBus = true;
+  }
+
+  async _retryConnection() {
+    try {
+      this._logger.info(
+        `retry connection ${this._retryOnResetConnectionCounter}`
+      );
+      if (this._retryOnResetConnectionCounter > 30) {
+        this._logger.info(`max retry connection reached -> kill process`);
+        process.exit(1);
+      }
+      this._retryOnResetConnectionCounter++;
+      const conn = await this.connection("test");
+      conn.exists("test", () => {
+        this._retryOnResetConnectionCounter = 1;
+        this._logger.info(`test connection success`);
+      });
+    } catch (error) {
+      this._logger.debug(`retry connection error: ${error} `);
+      setTimeout(
+        this._retryConnection.bind(this),
+        Math.min(1000 * this._retryOnResetConnectionCounter, 30 * 1000)
+      );
+    }
   }
 
   _connectCompleted(err) {
