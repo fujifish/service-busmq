@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/capriza/service-busmq#readme",
   "dependencies": {
-    "busmq": "3.0.1",
+    "busmq": "3.0.2",
     "newrelic": "5.6.3",
     "pino": "5.8.0"
   },
