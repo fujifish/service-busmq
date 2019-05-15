@@ -27,7 +27,6 @@ class BusServices extends Emitter {
     this._instrumentLogger(this._logger);
     if (config.throttle) {
       this._throttle = cb => {
-        this._logger.info(`throttle cpu ${cpuMeasure.cpuPercent}`);
         const timeout = Math.min(1 * cpuMeasure.cpuPercent, 50);
         cpuMeasure.cpuPercent > 5
           ? setTimeout(() => {
